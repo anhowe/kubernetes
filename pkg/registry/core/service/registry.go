@@ -50,6 +50,8 @@ func NewRegistry(s rest.StandardStorage) Registry {
 }
 
 func (s *storage) ListServices(ctx genericapirequest.Context, options *metainternalversion.ListOptions) (*api.ServiceList, error) {
+	glog.V(2).Infof("[ListServices,")
+	defer glog.V(2).Infof("ListServices]")
 	obj, err := s.List(ctx, options)
 	if err != nil {
 		return nil, err
@@ -58,6 +60,8 @@ func (s *storage) ListServices(ctx genericapirequest.Context, options *metainter
 }
 
 func (s *storage) CreateService(ctx genericapirequest.Context, svc *api.Service) (*api.Service, error) {
+	glog.V(2).Infof("[CreateService,")
+	defer glog.V(2).Infof("CreateService]")
 	obj, err := s.Create(ctx, svc)
 	if err != nil {
 		return nil, err
@@ -66,6 +70,8 @@ func (s *storage) CreateService(ctx genericapirequest.Context, svc *api.Service)
 }
 
 func (s *storage) GetService(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (*api.Service, error) {
+	glog.V(2).Infof("[GetService,")
+	defer glog.V(2).Infof("GetService]")
 	obj, err := s.Get(ctx, name, options)
 	if err != nil {
 		return nil, err
@@ -74,11 +80,15 @@ func (s *storage) GetService(ctx genericapirequest.Context, name string, options
 }
 
 func (s *storage) DeleteService(ctx genericapirequest.Context, name string) error {
+	glog.V(2).Infof("[DeleteService,")
+	defer glog.V(2).Infof("DeleteService]")
 	_, _, err := s.Delete(ctx, name, nil)
 	return err
 }
 
 func (s *storage) UpdateService(ctx genericapirequest.Context, svc *api.Service) (*api.Service, error) {
+	glog.V(2).Infof("[UpdateService,")
+	defer glog.V(2).Infof("UpdateService]")
 	obj, _, err := s.Update(ctx, svc.Name, rest.DefaultUpdatedObjectInfo(svc, api.Scheme))
 	if err != nil {
 		return nil, err
@@ -87,12 +97,16 @@ func (s *storage) UpdateService(ctx genericapirequest.Context, svc *api.Service)
 }
 
 func (s *storage) WatchServices(ctx genericapirequest.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+	glog.V(2).Infof("[DeleteService,")
+	defer glog.V(2).Infof("DeleteService]")
 	return s.Watch(ctx, options)
 }
 
 // If StandardStorage implements rest.Exporter, returns exported service.
 // Otherwise export is not supported.
 func (s *storage) ExportService(ctx genericapirequest.Context, name string, options metav1.ExportOptions) (*api.Service, error) {
+	glog.V(2).Infof("[ExportService,")
+	defer glog.V(2).Infof("ExportService]")
 	exporter, isExporter := s.StandardStorage.(rest.Exporter)
 	if !isExporter {
 		return nil, fmt.Errorf("export is not supported")
