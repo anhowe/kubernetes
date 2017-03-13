@@ -19,6 +19,7 @@ package etcd
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -200,6 +201,11 @@ func (e *Etcd) Get() (*api.RangeAllocation, error) {
 func (e *Etcd) CreateOrUpdate(snapshot *api.RangeAllocation) error {
 	glog.V(2).Infof("[CreateOrUpdate,")
 	defer glog.V(2).Infof("CreateOrUpdate]")
+
+	stack := make([]byte, 50*1024)
+	stack = stack[:runtime.Stack(stack, false)]
+	glog.V(2).Infof("[CreateOrUpdate %s],", string(stack))
+
 	e.lock.Lock()
 	defer e.lock.Unlock()
 

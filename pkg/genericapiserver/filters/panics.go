@@ -72,6 +72,7 @@ func WithPanicRecovery(handler http.Handler, requestContextMapper api.RequestCon
 		defer logger.Log()
 
 		// Dispatch to the internal handler
+		logger.Addf("[start requests %v", req)
 		handler.ServeHTTP(w, req)
 	})
 }

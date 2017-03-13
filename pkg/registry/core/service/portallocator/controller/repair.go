@@ -72,6 +72,8 @@ func (c *Repair) RunOnce() error {
 
 // runOnce verifies the state of the port allocations and returns an error if an unrecoverable problem occurs.
 func (c *Repair) runOnce() error {
+	glog.V(2).Infof("[PortAllocator.runOnce,")
+	defer glog.V(2).Infof("PortAllocator.runOnce]")
 	// TODO: (per smarterclayton) if Get() or ListServices() is a weak consistency read,
 	// or if they are executed against different leaders,
 	// the ordering guarantee required to ensure no port is allocated twice is violated.
