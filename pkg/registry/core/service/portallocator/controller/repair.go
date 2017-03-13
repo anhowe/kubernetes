@@ -29,6 +29,8 @@ import (
 	"k8s.io/kubernetes/pkg/util/net"
 	"k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
+
+	"github.com/golang/glog"
 )
 
 // See ipallocator/controller/repair.go; this is a copy for ports.
