@@ -106,6 +106,8 @@ func (r *PortAllocator) Used() int {
 // or has already been reserved.  ErrFull will be returned if there
 // are no ports left.
 func (r *PortAllocator) Allocate(port int) error {
+	glog.V(2).Infof("[PortAllocator.Allocate(%d),", port)
+	defer glog.V(2).Infof("PortAllocator.Allocate(%d)]", port)
 	ok, offset := r.contains(port)
 	if !ok {
 		// include valid port range in error
@@ -126,7 +128,10 @@ func (r *PortAllocator) Allocate(port int) error {
 // AllocateNext reserves one of the ports from the pool. ErrFull may
 // be returned if there are no ports left.
 func (r *PortAllocator) AllocateNext() (int, error) {
+	glog.V(2).Infof("[PortAllocator.AllocateNext(),")
+	defer glog.V(2).Infof("PortAllocator.AllocateNext()]")
 	offset, ok, err := r.alloc.AllocateNext()
+	glog.V(2).Infof("[PortAllocator.AllocateNext(),", offset)
 	if err != nil {
 		return 0, err
 	}
@@ -148,6 +153,8 @@ func (r *PortAllocator) ForEach(fn func(int)) {
 // unallocated port or a port out of the range is a no-op and
 // returns no error.
 func (r *PortAllocator) Release(port int) error {
+	glog.V(2).Infof("[PortAllocator.Release(%d),", port)
+	defer glog.V(2).Infof("PortAllocator.Release(%d)]", port)
 	ok, offset := r.contains(port)
 	if !ok {
 		glog.Warningf("port is not in the range when release it. port: %v", port)
@@ -170,13 +177,13 @@ func (r *PortAllocator) Has(port int) bool {
 
 // Snapshot saves the current state of the pool.
 func (r *PortAllocator) Snapshot(dst *api.RangeAllocation) error {
-	glog.V(2).Infof("[Snapshot,")
+	glog.V(2).Infof("[PortAllocator.Snapshot,")
 	snapshottable, ok := r.alloc.(allocator.Snapshottable)
 	if !ok {
 		return fmt.Errorf("not a snapshottable allocator")
 	}
 	rangeString, data := snapshottable.Snapshot()
-	glog.V(2).Infof("Snapshot]")
+	glog.V(2).Infof("PortAllocator.Snapshot]")
 	dst.Range = rangeString
 	dst.Data = data
 	return nil
@@ -185,8 +192,8 @@ func (r *PortAllocator) Snapshot(dst *api.RangeAllocation) error {
 // Restore restores the pool to the previously captured state. ErrMismatchedNetwork
 // is returned if the provided port range doesn't exactly match the previous range.
 func (r *PortAllocator) Restore(pr net.PortRange, data []byte) error {
-	glog.V(2).Infof("[Restore,")
-	defer glog.V(2).Infof("Restore]")
+	glog.V(2).Infof("[PortAllocator.Restore,")
+	defer glog.V(2).Infof("PortAllocator.Restore]")
 	if pr.String() != r.portRange.String() {
 		return ErrMismatchedNetwork
 	}
@@ -200,10 +207,14 @@ func (r *PortAllocator) Restore(pr net.PortRange, data []byte) error {
 // contains returns true and the offset if the port is in the range, and false
 // and nil otherwise.
 func (r *PortAllocator) contains(port int) (bool, int) {
+	glog.V(2).Infof("[PortAllocator.contains(%d),", port)
+	defer glog.V(2).Infof("PortAllocator.contains(%d)]", port)
 	if !r.portRange.Contains(port) {
+		glog.V(2).Infof("PortAllocator.contains(false),")
 		return false, 0
 	}
 
 	offset := port - r.portRange.Base
+	glog.V(2).Infof("PortAllocator.contains(true,%d),", offset)
 	return true, offset
 }
