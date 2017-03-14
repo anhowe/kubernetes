@@ -18,6 +18,7 @@ package allocator
 
 import (
 	"errors"
+	"github.com/golang/glog"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -82,6 +83,8 @@ func NewContiguousAllocationMap(max int, rangeSpec string) *AllocationBitmap {
 // Allocate attempts to reserve the provided item.
 // Returns true if it was allocated, false if it was already in use
 func (r *AllocationBitmap) Allocate(offset int) (bool, error) {
+	glog.V(2).Infof("[bitmap.Allocate(%d),", offset)
+	defer glog.V(2).Infof("bitmap.Allocate(%d)]", offset)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -90,21 +93,31 @@ func (r *AllocationBitmap) Allocate(offset int) (bool, error) {
 	}
 	r.allocated = r.allocated.SetBit(r.allocated, offset, 1)
 	r.count++
+	r.ForEach(func(i int) {
+		glog.V(2).Infof("bitmap.Allocate (%v),", i)
+	})
 	return true, nil
 }
 
 // AllocateNext reserves one of the items from the pool.
 // (0, false, nil) may be returned if there are no items left.
 func (r *AllocationBitmap) AllocateNext() (int, bool, error) {
+	glog.V(2).Infof("[bitmap.AllocateNext(),")
+	defer glog.V(2).Infof("bitmap.AllocateNext()]")
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	next, ok := r.strategy(r.allocated, r.max, r.count)
+	glog.V(2).Infof("bitmap.AllocateNext(%d),", next)
 	if !ok {
+		glog.V(2).Infof("bitmap.AllocateNext(%d) - not ok,", next)
 		return 0, false, nil
 	}
 	r.count++
 	r.allocated = r.allocated.SetBit(r.allocated, next, 1)
+	r.ForEach(func(i int) {
+		glog.V(2).Infof("bitmap.AllocateNext (%v),", i)
+	})
 	return next, true, nil
 }
 
@@ -112,6 +125,8 @@ func (r *AllocationBitmap) AllocateNext() (int, bool, error) {
 // unallocated item or an item out of the range is a no-op and
 // returns no error.
 func (r *AllocationBitmap) Release(offset int) error {
+	glog.V(2).Infof("[bitmap.Release(%d),", offset)
+	defer glog.V(2).Infof("bitmap.Release(%d)]", offset)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -120,6 +135,9 @@ func (r *AllocationBitmap) Release(offset int) error {
 	}
 
 	r.allocated = r.allocated.SetBit(r.allocated, offset, 0)
+	r.ForEach(func(i int) {
+		glog.V(2).Infof("bitmap.Release (%v),", i)
+	})
 	r.count--
 	return nil
 }
@@ -169,14 +187,22 @@ func (r *AllocationBitmap) Free() int {
 
 // Snapshot saves the current state of the pool.
 func (r *AllocationBitmap) Snapshot() (string, []byte) {
+	glog.V(2).Infof("[bitmap.Snapshot,")
+	defer glog.V(2).Infof("bitmap.Snapshot]")
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	r.ForEach(func(i int) {
+		glog.V(2).Infof("bitmap.Snapshot (%v),", i)
+	})
 
 	return r.rangeSpec, r.allocated.Bytes()
 }
 
 // Restore restores the pool to the previously captured state.
 func (r *AllocationBitmap) Restore(rangeSpec string, data []byte) error {
+	glog.V(2).Infof("[bitmap.Restore,")
+	defer glog.V(2).Infof("bitmap.Restore]")
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -186,6 +212,10 @@ func (r *AllocationBitmap) Restore(rangeSpec string, data []byte) error {
 
 	r.allocated = big.NewInt(0).SetBytes(data)
 	r.count = countBits(r.allocated)
+
+	r.ForEach(func(i int) {
+		glog.V(2).Infof("bitmap.Restore (%v),", i)
+	})
 
 	return nil
 }

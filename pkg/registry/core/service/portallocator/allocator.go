@@ -117,9 +117,11 @@ func (r *PortAllocator) Allocate(port int) error {
 
 	allocated, err := r.alloc.Allocate(offset)
 	if err != nil {
+		glog.V(2).Infof("PortAllocator.Allocate(%d) someothererror,", port)
 		return err
 	}
 	if !allocated {
+		glog.V(2).Infof("PortAllocator.Allocate(%d) ErrAllocated,", port)
 		return ErrAllocated
 	}
 	return nil

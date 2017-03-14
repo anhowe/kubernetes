@@ -75,8 +75,8 @@ func NewEtcd(alloc allocator.Snapshottable, baseKey string, resource unversioned
 
 // Allocate attempts to allocate the item locally and then in etcd.
 func (e *Etcd) Allocate(offset int) (bool, error) {
-	glog.V(2).Infof("[Allocate(%d),", offset)
-	defer glog.V(2).Infof("Allocate(%d)]", offset)
+	glog.V(2).Infof("[etcd.Allocate(%d),", offset)
+	defer glog.V(2).Infof("etcd.Allocate(%d)]", offset)
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -87,18 +87,23 @@ func (e *Etcd) Allocate(offset int) (bool, error) {
 
 	err = e.tryUpdate(func() error {
 		ok, err := e.alloc.Allocate(offset)
+		glog.V(2).Infof("[etcd.Allocate(%d),", offset)
 		if err != nil {
+			glog.V(2).Infof("[etcd.Allocate(%d)err,", offset)
 			return err
 		}
 		if !ok {
+			glog.V(2).Infof("[etcd.Allocate(%d)!ok,", offset)
 			return errorUnableToAllocate
 		}
 		return nil
 	})
 	if err != nil {
 		if err == errorUnableToAllocate {
+			glog.V(2).Infof("[etcd.Allocate(%d)errorUnableToAllocate,", offset)
 			return false, nil
 		}
+		glog.V(2).Infof("[etcd.Allocate(%d)err!=nil,", offset)
 		return false, err
 	}
 	return true, nil
@@ -106,13 +111,13 @@ func (e *Etcd) Allocate(offset int) (bool, error) {
 
 // AllocateNext attempts to allocate the next item locally and then in etcd.
 func (e *Etcd) AllocateNext() (int, bool, error) {
-	glog.V(2).Infof("[AllocateNext(),")
-	defer glog.V(2).Infof("AllocateNext()]")
+	glog.V(2).Infof("[etcd.AllocateNext(),")
+	defer glog.V(2).Infof("etcd.AllocateNext()]")
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	offset, ok, err := e.alloc.AllocateNext()
-	glog.V(2).Infof("AllocateNext(%d),", offset)
+	glog.V(2).Infof("etcd.AllocateNext => %d,", offset)
 	if !ok || err != nil {
 		return offset, ok, err
 	}
@@ -120,19 +125,25 @@ func (e *Etcd) AllocateNext() (int, bool, error) {
 	err = e.tryUpdate(func() error {
 		ok, err := e.alloc.Allocate(offset)
 		if err != nil {
+			glog.V(2).Infof("etcd.AllocateNext => %d, err!=nil,", offset)
 			return err
 		}
 		if !ok {
 			// update the offset here
 			offset, ok, err = e.alloc.AllocateNext()
+			glog.V(2).Infof("etcd.AllocateNext2ndTime => %d,", offset)
 			if err != nil {
+				glog.V(2).Infof("etcd.AllocateNext2ndTime => %d err!=nil,", offset)
 				return err
 			}
 			if !ok {
+				glog.V(2).Infof("etcd.AllocateNext2ndTime => %d errorUnableToAllocate,", offset)
 				return errorUnableToAllocate
 			}
+			glog.V(2).Infof("etcd.AllocateNext2ndTime => %d !ok but fixed,", offset)
 			return nil
 		}
+		glog.V(2).Infof("etcd.AllocateNext => %d allgood,", offset)
 		return nil
 	})
 	return offset, ok, err
@@ -140,6 +151,8 @@ func (e *Etcd) AllocateNext() (int, bool, error) {
 
 // Release attempts to release the provided item locally and then in etcd.
 func (e *Etcd) Release(item int) error {
+	glog.V(2).Infof("[etcd.Release(),")
+	defer glog.V(2).Infof("etcd.Release()]")
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -169,10 +182,14 @@ func (e *Etcd) tryUpdate(fn func() error) error {
 				return nil, fmt.Errorf("cannot allocate resources of type %s at this time", e.resource.String())
 			}
 			if existing.ResourceVersion != e.last {
+				glog.V(2).Infof("tryUpdate-restore,")
 				if err := e.alloc.Restore(existing.Range, existing.Data); err != nil {
+					glog.V(2).Infof("tryUpdate-restore-error,")
 					return nil, err
 				}
+				glog.V(2).Infof("tryUpdate-restore-fn,")
 				if err := fn(); err != nil {
+					glog.V(2).Infof("tryUpdate-restore-fnerror,")
 					return nil, err
 				}
 			}
