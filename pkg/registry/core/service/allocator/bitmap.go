@@ -93,7 +93,7 @@ func (r *AllocationBitmap) Allocate(offset int) (bool, error) {
 	}
 	r.allocated = r.allocated.SetBit(r.allocated, offset, 1)
 	r.count++
-	r.ForEach(func(i int) {
+	r.forEach(func(i int) {
 		glog.V(2).Infof("bitmap.Allocate (%v),", i)
 	})
 	return true, nil
@@ -115,7 +115,7 @@ func (r *AllocationBitmap) AllocateNext() (int, bool, error) {
 	}
 	r.count++
 	r.allocated = r.allocated.SetBit(r.allocated, next, 1)
-	r.ForEach(func(i int) {
+	r.forEach(func(i int) {
 		glog.V(2).Infof("bitmap.AllocateNext (%v),", i)
 	})
 	return next, true, nil
@@ -135,7 +135,7 @@ func (r *AllocationBitmap) Release(offset int) error {
 	}
 
 	r.allocated = r.allocated.SetBit(r.allocated, offset, 0)
-	r.ForEach(func(i int) {
+	r.forEach(func(i int) {
 		glog.V(2).Infof("bitmap.Release (%v),", i)
 	})
 	r.count--
@@ -155,6 +155,21 @@ func (r *AllocationBitmap) ForEach(fn func(int)) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	words := r.allocated.Bits()
+	for wordIdx, word := range words {
+		bit := 0
+		for word > 0 {
+			if (word & 1) != 0 {
+				fn((wordIdx * wordSize * 8) + bit)
+				word = word &^ 1
+			}
+			bit++
+			word = word >> 1
+		}
+	}
+}
+
+func (r *AllocationBitmap) forEach(fn func(int)) {
 	words := r.allocated.Bits()
 	for wordIdx, word := range words {
 		bit := 0
@@ -192,7 +207,7 @@ func (r *AllocationBitmap) Snapshot() (string, []byte) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.ForEach(func(i int) {
+	r.forEach(func(i int) {
 		glog.V(2).Infof("bitmap.Snapshot (%v),", i)
 	})
 
@@ -213,7 +228,7 @@ func (r *AllocationBitmap) Restore(rangeSpec string, data []byte) error {
 	r.allocated = big.NewInt(0).SetBytes(data)
 	r.count = countBits(r.allocated)
 
-	r.ForEach(func(i int) {
+	r.forEach(func(i int) {
 		glog.V(2).Infof("bitmap.Restore (%v),", i)
 	})
 
